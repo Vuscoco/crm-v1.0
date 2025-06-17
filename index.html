@@ -1,0 +1,248 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Login</title>
+    <link rel="stylesheet" href="css/Login(include).css"> <!-- Link to the CSS file -->
+    <style>
+        /* Autocomplete styles */
+        .autocomplete-suggestions {
+            position: absolute;
+            background: white;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            max-height: 150px;
+            overflow-y: auto;
+            z-index: 1000;
+            width: 100%;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+            display: none;
+        }
+
+        .autocomplete-suggestion {
+            padding: 8px 12px;
+            cursor: pointer;
+        }
+
+        .autocomplete-suggestion:hover,
+        .autocomplete-suggestion.active {
+            background-color: #f0f0f0;
+        }
+
+        .input-container {
+            position: relative;
+            width: 100%;
+        }
+    </style>
+</head>
+
+<body>
+<!--WELCOME TO SIZWE LEAP-->
+<header>
+<h1>Welcome to Sizwe Leap</h1>
+</header>
+<!--END OF WELCOME TO SIZWE LEAP-->
+
+<!--LOGIN FORM-->
+<main>
+<section id="auth-section">
+<form id="auth-form">
+
+<!--LOGO-->
+<div id="logo-container"> 
+<img src="images/sizwe_training_logo.jpeg" id="form-logo">    
+</div>
+<!--END OF LOGO-->
+
+<!--NAME INPUT-->
+<div class="input-container">
+    <label for="name">Name:</label>
+    <input type="text" id="name" name="name" placeholder="Enter your name" required autocomplete="off">
+    <div id="nameSuggestions" class="autocomplete-suggestions"></div>
+</div>
+<!--END OF NAME INPUT-->
+
+<!--EMAIL INPUT-->  
+<div class="input-container">
+    <label for="email">Email:</label>
+    <input type="email" id="email" name="email" placeholder="Enter your email" required autocomplete="off">
+    <div id="emailSuggestions" class="autocomplete-suggestions"></div>
+</div>
+<!--END OF EMAIL INPUT-->
+
+<!--USERNAME INPUT-->
+<label for="password">Password:</label>
+<input type="password" id="password" name="password" placeholder="Enter your password" required>
+<!--END OF USERNAME INPUT-->
+
+<!--FORGOT PASSWORD LINK-->
+<a href="#" id="forgot-password">Forgot password?</a>
+<!--END OF FORGOT PASSWORD LINK-->
+
+<!--LOGIN AND SIGNUP BUTTONS-->
+<div id="auth-buttons">
+<a href="pages/dashboard.html"><button type="button" id="login-button">Log In</button></a>
+<button type="button" id="signup-button">Sign Up</button>
+<!--END OF LOGIN AND SIGNUP BUTTONS-->
+
+</div>
+</form>
+</section>
+</main>
+
+<script>
+    // Store user data with bidirectional pairs
+    const userData = {
+        pairs: [
+            { name: 'Koketso', email: 'koketso@sizwetraining.co.za' },
+            { name: 'HR1', email: 'hr1@sizwetraining.co.za' }
+        ]
+    };
+
+    // Function to handle autocomplete
+    function setupAutocomplete(inputId, suggestionsId, linkedFieldId) {
+        const input = document.getElementById(inputId);
+        const suggestionsDiv = document.getElementById(suggestionsId);
+        const linkedField = document.getElementById(linkedFieldId);
+        let lastValue = '';
+
+        input.addEventListener('input', function() {
+            const value = this.value.toLowerCase();
+            
+            // Start suggesting after 1 character
+            if (value.length < 1) {
+                suggestionsDiv.style.display = 'none';
+                return;
+            }
+
+            // Find matches based on whether we're searching name or email
+            const isNameField = inputId === 'name';
+            const matches = userData.pairs.filter(pair => 
+                (isNameField ? pair.name.toLowerCase() : pair.email.toLowerCase()).startsWith(value)
+            );
+
+            if (matches.length > 0) {
+                // If there's only one match, auto-complete both fields
+                if (matches.length === 1) {
+                    const match = matches[0];
+                    const currentValue = isNameField ? match.name : match.email;
+                    const linkedValue = isNameField ? match.email : match.name;
+                    
+                    // Only auto-complete if we're at the end of the input
+                    if (input.selectionStart === value.length) {
+                        input.value = currentValue;
+                        linkedField.value = linkedValue;
+                        input.setSelectionRange(value.length, value.length);
+                    }
+                }
+
+                // Show all matches in dropdown
+                suggestionsDiv.innerHTML = matches
+                    .map(match => `<div class="autocomplete-suggestion" data-name="${match.name}" data-email="${match.email}">
+                        ${isNameField ? match.name : match.email}
+                    </div>`)
+                    .join('');
+                suggestionsDiv.style.display = 'block';
+            } else {
+                suggestionsDiv.style.display = 'none';
+            }
+
+            lastValue = value;
+        });
+
+        // Handle suggestion clicks
+        suggestionsDiv.addEventListener('click', function(e) {
+            if (e.target.classList.contains('autocomplete-suggestion')) {
+                const isNameField = inputId === 'name';
+                input.value = isNameField ? e.target.dataset.name : e.target.dataset.email;
+                linkedField.value = isNameField ? e.target.dataset.email : e.target.dataset.name;
+                suggestionsDiv.style.display = 'none';
+                input.dispatchEvent(new Event('input'));
+            }
+        });
+
+        // Handle keyboard navigation
+        input.addEventListener('keydown', function(e) {
+            const suggestions = suggestionsDiv.getElementsByClassName('autocomplete-suggestion');
+            const activeSuggestion = suggestionsDiv.querySelector('.autocomplete-suggestion.active');
+            
+            if (suggestions.length > 0) {
+                if (e.key === 'ArrowDown') {
+                    e.preventDefault();
+                    if (activeSuggestion) {
+                        const nextSuggestion = activeSuggestion.nextElementSibling;
+                        if (nextSuggestion) {
+                            activeSuggestion.classList.remove('active');
+                            nextSuggestion.classList.add('active');
+                            const isNameField = inputId === 'name';
+                            input.value = isNameField ? nextSuggestion.dataset.name : nextSuggestion.dataset.email;
+                            linkedField.value = isNameField ? nextSuggestion.dataset.email : nextSuggestion.dataset.name;
+                        }
+                    } else {
+                        suggestions[0].classList.add('active');
+                        const isNameField = inputId === 'name';
+                        input.value = isNameField ? suggestions[0].dataset.name : suggestions[0].dataset.email;
+                        linkedField.value = isNameField ? suggestions[0].dataset.email : suggestions[0].dataset.name;
+                    }
+                } else if (e.key === 'ArrowUp') {
+                    e.preventDefault();
+                    if (activeSuggestion) {
+                        const prevSuggestion = activeSuggestion.previousElementSibling;
+                        if (prevSuggestion) {
+                            activeSuggestion.classList.remove('active');
+                            prevSuggestion.classList.add('active');
+                            const isNameField = inputId === 'name';
+                            input.value = isNameField ? prevSuggestion.dataset.name : prevSuggestion.dataset.email;
+                            linkedField.value = isNameField ? prevSuggestion.dataset.email : prevSuggestion.dataset.name;
+                        }
+                    }
+                } else if (e.key === 'Enter' && activeSuggestion) {
+                    e.preventDefault();
+                    const isNameField = inputId === 'name';
+                    input.value = isNameField ? activeSuggestion.dataset.name : activeSuggestion.dataset.email;
+                    linkedField.value = isNameField ? activeSuggestion.dataset.email : activeSuggestion.dataset.name;
+                    suggestionsDiv.style.display = 'none';
+                }
+            }
+        });
+
+        // Hide suggestions when clicking outside
+        document.addEventListener('click', function(e) {
+            if (!input.contains(e.target) && !suggestionsDiv.contains(e.target)) {
+                suggestionsDiv.style.display = 'none';
+            }
+        });
+    }
+
+    // Initialize autocomplete for both fields with bidirectional linking
+    setupAutocomplete('name', 'nameSuggestions', 'email');
+    setupAutocomplete('email', 'emailSuggestions', 'name');
+
+    // Save new entries to localStorage
+    document.getElementById('auth-form').addEventListener('submit', function(e) {
+        const name = document.getElementById('name').value;
+        const email = document.getElementById('email').value;
+
+        // Check if this pair already exists
+        const pairExists = userData.pairs.some(pair => 
+            pair.name === name || pair.email === email
+        );
+
+        // Add new pair if it doesn't exist
+        if (!pairExists) {
+            userData.pairs.push({ name, email });
+            localStorage.setItem('userPairs', JSON.stringify(userData.pairs));
+        }
+    });
+
+    // Load saved data from localStorage on page load
+    window.addEventListener('load', function() {
+        const savedPairs = localStorage.getItem('userPairs');
+        if (savedPairs) {
+            userData.pairs = JSON.parse(savedPairs);
+        }
+    });
+</script>
+</body>
+</html>
